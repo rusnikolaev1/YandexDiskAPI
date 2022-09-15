@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.http import Http404
-from .serializers import ItemSerializer, HistoryItemSerializer
+from .serializers import ItemSerializer, HistoryItemSerializer, SingleItemSerializer
 from items.models import Item, HistoryItem
 from rest_framework import generics
 from django.db import transaction
@@ -14,6 +14,8 @@ from .utils import update_size, convert_str_to_datetime
 import datetime
 from .throttle import GetRequestsRateThrottle, PostDeleteRequestsRateThrottle
 
+import json
+
 
 @api_view(["POST"])
 @throttle_classes([PostDeleteRequestsRateThrottle])
@@ -23,20 +25,22 @@ def item_imports(request):
     """
 
     # проверки
-    if not 'items' in request.data:
-        raise ParseError('Отсутствует поле Items')
-    if not request.data['items']:
-        raise ParseError('Поле Items не может быть пустым')
+    print(request.data.items)
+    if not "items" in request.data:
+        raise ParseError("Отсутствует поле Items")
+    # print(json.loads(request.data))
+    if not request.data["items"]:
+        raise ParseError("Поле Items не может быть пустым")
     id_list = []
-    request_list = request.data['items']
+    request_list = request.data["items"]
     for item in request_list:
-        if not 'id' in item:
-            raise ParseError('Поле id не может быть пустым')
+        if not "id" in item:
+            raise ParseError("Поле id не может быть пустым")
         id_list.append(item["id"])
     if len(id_list) != len(set(id_list)):
         raise ParseError("Есть повторяющиеся элементы")
-    #проверим наличие даты и ее формат
-    if not 'updateDate' in request.data:
+    # проверим наличие даты и ее формат
+    if not "updateDate" in request.data:
         raise ParseError("Отсутствует поле updateDate")
     date = convert_str_to_datetime(request.data["updateDate"])
     if not date:
@@ -126,16 +130,21 @@ def item_delete(request, item_pk):
     """
     Удаление элемента по идентификатору.
     """
-    #проверим передан ли параметр date в запросе
-    if not 'date' in request.query_params:
+    # проверим передан ли параметр date в запросе
+    if not "date" in request.query_params:
         raise ParseError("Отсутствует параметр date")
-    if not request.query_params['date']:
+    if not request.query_params["date"]:
         raise ParseError("Отсутствует параметр date")
-    date = convert_str_to_datetime(request.GET['date'])
+    date = convert_str_to_datetime(request.GET["date"])
     if not date:
         raise ParseError("Неверный формат даты")
 
     item = get_object_or_404(Item, id=item_pk)
+
+    if date <= item.date:
+        raise ParseError(
+            "Дата удаления не может быть ранее последнего обновления элемента"
+        )
 
     # список родителей для обновления размера после удаления
     ancestors = item.get_ancestors(include_self=False).filter(type="FOLDER")
@@ -171,13 +180,20 @@ class ItemUpdates(generics.ListAPIView):
     включительно [date - 24h, date] от времени переданном в запросе.
     """
 
-    serializer_class = ItemSerializer
+    serializer_class = SingleItemSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = UpdatesFilter
     throttle_scope = "get_requests"
 
     def get_queryset(self):
-        return Item.objects.all().filter(type="FILE")
+        queryset = Item.objects.all().filter(type="FILE")
+        filtered_queryset = self.filter_queryset(queryset)
+        return filtered_queryset
+
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = SingleItemSerializer(queryset, many=True)
+        return Response({"items": serializer.data})
 
 
 class ItemHistory(generics.ListAPIView):
@@ -192,13 +208,13 @@ class ItemHistory(generics.ListAPIView):
     throttle_scope = "get_requests"
 
     def get_queryset(self):
-        queryset = HistoryItem.objects.filter(itemId=self.kwargs['item_pk'])
-        if not queryset:
-            raise Http404('Элемент не найден')
-        return queryset
+        queryset = HistoryItem.objects.filter(itemId=self.kwargs["item_pk"])
+        filtered_queryset = self.filter_queryset(queryset)
+        if not filtered_queryset:
+            raise Http404("Элемент не найден")
+        return filtered_queryset
 
-
-
-class ItemList(generics.ListAPIView):
-    queryset = Item.objects.all()
-    serializer_class = ItemSerializer
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = HistoryItemSerializer(queryset, many=True)
+        return Response({"items": serializer.data})

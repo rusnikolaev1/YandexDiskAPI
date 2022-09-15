@@ -6,14 +6,12 @@ from api.views import (
     item_delete,
     ItemUpdates,
     ItemHistory,
-    ItemList,
 )
 
 
 app_name = "api"
 
 urlpatterns = [
-    path("", ItemList.as_view()),
     path("imports", item_imports),
     path("nodes/<str:item_pk>", item_nodes),
     path("delete/<str:item_pk>", item_delete),

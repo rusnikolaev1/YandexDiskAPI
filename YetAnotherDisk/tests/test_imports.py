@@ -4,10 +4,14 @@ from dateutil.parser import isoparse
 import json
 from items.models import Item
 from tests.fixtures.fixture_data import (
-    create_file, create_folder, URL_IMPORTS,
-    DATE_1, DATE_2, DATE_3, NOT_ISO_DATE_1
+    create_file,
+    create_folder,
+    URL_IMPORTS,
+    DATE_1,
+    DATE_2,
+    DATE_3,
+    NOT_ISO_DATE_1,
 )
-
 
 
 @pytest.mark.django_db
@@ -304,11 +308,12 @@ def test_import_error_date_not_ISO_format(client):
     )
     assert response.status_code == 400
 
-    payload['updateDate'] = DATE_1
+    payload["updateDate"] = DATE_1
     response = client.post(
         URL_IMPORTS, json.dumps(payload), content_type="application/json"
     )
     assert response.status_code == 200
+
 
 @pytest.mark.django_db
 def test_import_error_using_old_date(client):
@@ -324,8 +329,8 @@ def test_import_error_using_old_date(client):
         URL_IMPORTS, json.dumps(payload), content_type="application/json"
     )
     assert response.status_code == 200
-    #при попытке обновить элемент с DATE_1 вернется ошибка 400
-    payload['updateDate'] = DATE_1
+    # при попытке обновить элемент с DATE_1 вернется ошибка 400
+    payload["updateDate"] = DATE_1
     response = client.post(
         URL_IMPORTS, json.dumps(payload), content_type="application/json"
     )

@@ -2,7 +2,6 @@ from rest_framework import serializers
 from items.models import Item, HistoryItem
 
 
-
 class ItemSerializer(serializers.ModelSerializer):
     parentId = serializers.CharField(
         source="parent_id", allow_null=True, required=False
@@ -98,8 +97,8 @@ class ItemSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "Изменение типа элемента с папки на файл и с файла на папку не допускается."
                 )
-            #поле date у Item в БД должно быть строго меньше чем data['date']
-            if item.date >=data['date']:
+            # поле date у Item в БД должно быть строго меньше чем data['date']
+            if item.date >= data["date"]:
                 raise serializers.ValidationError(
                     "Поле updateDate должно монотонно возрастать"
                 )
@@ -138,8 +137,25 @@ class HistoryItemSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "url",
-            "type",
-            "parentId",
             "date",
+            "parentId",
             "size",
+            "type",
+        )
+
+
+class SingleItemSerializer(serializers.ModelSerializer):
+    parentId = serializers.CharField(
+        source="parent_id", allow_null=True, required=False
+    )
+
+    class Meta:
+        model = Item
+        fields = (
+            "id",
+            "url",
+            "date",
+            "parentId",
+            "size",
+            "type",
         )

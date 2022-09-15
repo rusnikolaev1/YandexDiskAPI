@@ -7,7 +7,6 @@ from dateutil.parser import isoparse
 import datetime
 
 
-
 def update_size(obj: Item, date: datetime.datetime):
     """
     Обновление размера папок
@@ -29,6 +28,7 @@ def update_size(obj: Item, date: datetime.datetime):
         obj.date = date
     obj.save()
 
+
 def convert_str_to_datetime(date_str: str):
     """
     Преобразует дату в формат ISO 8601
@@ -38,28 +38,29 @@ def convert_str_to_datetime(date_str: str):
     except:
         return None
 
+
 def api_exception_handler(exc, context):
     #
-    #Пользовательский обработчик API исключений.
+    # Пользовательский обработчик API исключений.
     #
-    #вызов стандартного обработчика ошибок
-    #для получения деталей ошибки
+    # вызов стандартного обработчика ошибок
+    # для получения деталей ошибки
     response = exception_handler(exc, context)
 
     if response is not None:
         http_code_to_message = {v.value: v.description for v in HTTPStatus}
 
         error_payload = {
-                "code": 0,
-                "message": "",
-            }
+            "code": 0,
+            "message": "",
+        }
 
         status_code = response.status_code
         error_payload["code"] = status_code
         if isinstance(exc, ValidationError):
-            error_payload["message"]  = 'Validation Failed'
+            error_payload["message"] = "Validation Failed"
         elif isinstance(exc, Http404):
-            error_payload["message"]  = 'Item not found'
+            error_payload["message"] = "Item not found"
         else:
             error_payload["message"] = http_code_to_message[status_code]
         response.data = error_payload
