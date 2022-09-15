@@ -90,6 +90,7 @@
 6. Примените миграции
 
     `sudo docker-compose -f docker-compose.yaml exec web python manage.py makemigrations`
+
     `sudo docker-compose -f docker-compose.yaml exec web python manage.py migrate`
 8. Создайте суперпользователя
 
