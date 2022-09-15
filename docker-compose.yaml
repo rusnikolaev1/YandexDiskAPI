@@ -16,18 +16,18 @@ services:
       - ./.env
   db:
     image: postgres:14.4-alpine
-    container_name: disk_db
-    restart: always
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - /var/lib/postgresql/data/
+
     env_file:
       - ./.env
   nginx:
-    build: ./nginx
+    image: nginx:1.21.3-alpine
     ports:
-      - 80:80
+      - "80:80"
+
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - web
 
-volumes:
-  postgres_data:
